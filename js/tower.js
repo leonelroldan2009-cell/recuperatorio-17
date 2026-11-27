@@ -622,3 +622,114 @@ function gradientAnimation() {
 function displayScore(){
   document.querySelector('#score-span').innerHTML = gameState.score;
 }
+
+// =================================
+// MICROCHIPS COLECCIONABLES
+// =================================
+
+let chips = [];
+let chipCount = 0;
+
+const chipImage = new Image();
+chipImage.src = '../image/microchip.png';
+
+// Crear microchips en las plataformas
+function createChip(platform) {
+  if (Math.random() < 0.45) {
+    chips.push({
+      platform: platform,
+      size: 20
+    });
+  }
+}
+
+// Dibujar microchips
+function drawChips() {
+  chips = chips.filter(chip =>
+    blocks.includes(chip.platform)
+  );
+
+  chips.forEach(chip => {
+    const x = chip.platform.x +
+      chip.platform.width / 2 - 10;
+    const y = chip.platform.y - 24;
+
+    if (chipImage.complete && chipImage.naturalWidth > 0) {
+      context.drawImage(
+        chipImage, x, y, chip.size, chip.size
+      );
+    } else {
+      context.fillStyle = '#FFD700';
+      context.fillRect(x, y, chip.size, chip.size);
+    }
+  });
+}
+
+// Recoger microchips
+function collectChips() {
+  for (let i = chips.length - 1; i >= 0; i--) {
+    const chip = chips[i];
+    const x = chip.platform.x +
+      chip.platform.width / 2 - 10;
+    const y = chip.platform.y - 24;
+
+    if (
+      character.x < x + chip.size &&
+      character.x + character.width > x &&
+      character.y < y + chip.size &&
+      character.y + character.height > y
+    ) {
+      gameState.score += 10;
+      chipCount++;
+
+      chips.splice(i, 1);
+      displayScore();
+    }
+  }
+}
+
+// Integrar los microchips al juego original
+
+const originalDrawBlocks = drawBlocks;
+drawBlocks = function() {
+  originalDrawBlocks();
+  drawChips();
+};
+
+const originalInitBlocks = initBlocks;
+initBlocks = function() {
+  chips = [];
+  chipCount = 0;
+
+  originalInitBlocks();
+
+  blocks.forEach(platform => {
+    createChip(platform);
+  });
+
+  displayScore();
+};
+
+const originalAddblock = addblock;
+addblock = function() {
+  originalAddblock();
+
+  createChip(blocks[blocks.length - 1]);
+};
+
+const originalMainLoop = mainLoop;
+mainLoop = function() {
+  collectChips();
+  originalMainLoop();
+};
+
+// Mostrar el contador
+const originalDisplayScore = displayScore;
+displayScore = function() {
+  originalDisplayScore();
+
+  document.querySelector('#score-span').innerHTML =
+    gameState.score + ' | Microchips: ' + chipCount;
+};
+
+displayScore();
